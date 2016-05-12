@@ -148,15 +148,20 @@ class FirebaseLib implements FirebaseInterface
      *
      * @return array Response
      */
-    public function get($path)
+    public function get($path, $query = null)
     {
         try {
-            $ch = $this->_getCurlHandler($path, 'GET');
+            $ch = $this->_getCurlHandler($path, 'GET', $query);
             $return = curl_exec($ch);
             curl_close($ch);
         } catch (Exception $e) {
             $return = null;
         }
+
+        if ("null" == $return || "{}" == $return) {
+            $return = null;
+        }
+
         return $return;
     }
 
@@ -187,9 +192,10 @@ class FirebaseLib implements FirebaseInterface
      *
      * @return resource Curl Handler
      */
-    private function _getCurlHandler($path, $mode)
+    private function _getCurlHandler($path, $mode, $query)
     {
         $url = $this->_getJsonPath($path);
+        $url = $query ? $url . $this->getString($query) : $url;
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_TIMEOUT, $this->_timeout);
@@ -219,4 +225,13 @@ class FirebaseLib implements FirebaseInterface
         return $return;
     }
 
+    private function getString($query = null)
+    {
+        if (!$query) return null;
+        $str = '';
+        foreach ($query as $key => $val) {
+            $str .= is_numeric($val) ? '&' . $key . '=' . $val : '&' . $key . '="' . $val . '"';
+        }
+        return $str;
+    }
 }
